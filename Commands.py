@@ -1,7 +1,8 @@
 import glob
 import os
 import shutil
-import operator
+import main
+import convert_sizes
 
 # we can do a super class at the end
 
@@ -33,19 +34,20 @@ class GrepCommand(Command):
             self.__path = path
         else:
             self._finishStatus = False
-            self._outputReport = "Fail: Could not find directory"
+            self._outputReport += "\nFail: Could not find directory"
 
     def get_file(self):
         return self.__file
 
-    def executeGrep(self):
+    def execute(self):
         if self.get_finishStatus():
             text_files = glob.glob(self.__path + "/**/" + self.__file, recursive=True)
             self._finishStatus = True
             if len(text_files) != 0:
-                self._outputReport = "File was successfully found: "+ str(text_files)
+                self._outputReport += "\nFile was successfully found: "+ str(text_files)
             else:
-                self._outputReport = "Could not find the file in the directory or its subdirectories "
+                self._finishStatus = True
+                self._outputReport += "\nCould not find the file in the directory or its subdirectories "
 
 class Mv_lastCommand(Command):
     """This class automates the Mv_last <src_directory> <des_directory>"""
@@ -55,18 +57,18 @@ class Mv_lastCommand(Command):
         self.__set_destination(destination)
 
     def __set_source(self, source):
-        if os.path.exists(source) :
-            self.__source = source
+        if os.path.exists(source) and os.path.isdir(source):
+                self.__source = source
         else:
             self._finishStatus = False
-            self._outputReport = "Fail: Could not find directory"
+            self._outputReport += "\nFail: Could not find source directory"
 
     def __set_destination(self, destination):
-        if os.path.exists(destination):
-            self.__destination = destination
+        if os.path.exists(destination) and os.path.isdir(destination):
+                self.__destination = destination
         else:
             self._finishStatus = False
-            self._outputReport = "Fail: Could not find directory"
+            self._outputReport += "\nFail: Could not find destination directory"
 
     def get_source(self):
         return self.__source
@@ -74,8 +76,7 @@ class Mv_lastCommand(Command):
     def get_destination(self):
         return self.__destination
 
-
-    def executeMv_last(self):
+    def execute(self):
         if self.get_finishStatus():
             time_of_files = []
             for fname in os.listdir(self.get_source()):
@@ -89,18 +90,20 @@ class Mv_lastCommand(Command):
                 time_of_files.sort(key=os.path.getctime, reverse=True)
                 mostRecentFile = time_of_files[0]
                 try:
+                    self._outputReport += "Moving "+mostRecentFile+" to"+ self.get_destination()
                     shutil.move(mostRecentFile, self.get_destination())
                 except:
                     self._finishStatus=False
-                    self._outputReport="File already exists"
+                    self._outputReport +="\nFile already exists"
                     return
                 self._finishStatus = True
-                self._outputReport = "Successfully moved the most recent file"
+                self._outputReport += "\nSuccessfully moved the most recent file"
             else:
-                self._outputReport = "No files were found in source directory"
+                self._outputReport += "\nNo files were found in source directory"
 
 class CategorizeCommand(Command):
-    def __init__(self,path):
+    countDirectory = 0
+    def __init__(self, path):
         super(CategorizeCommand, self).__init__()
         self.__set_path(path)
 
@@ -109,33 +112,42 @@ class CategorizeCommand(Command):
             self.__path = path
         else:
             self._finishStatus = False
-            self._outputReport = "Fail: Could not find directory"
+            self._outputReport += "\nFail: Could not find directory"
 
     def get_path(self):
         return self.__path
 
-#THIS WILL CAUSE EXCEPTION FOR MULTIPLE SCRIPTS
-    def executeCategorize(self):
+    def execute(self):
         if self.get_finishStatus():
-            directory_files = []
-            for fname in os.listdir(self.get_path()):
-                path = os.path.join(self.get_path(), fname)
-                if os.path.isdir(path):
-                    continue
-                else:
-                    time = os.path.getctime(os.path.join(self.get_path(), fname))
-                    directory_files.append(os.path.join(self.get_path(), fname))
-            if len(directory_files) != 0:
-                lessPath = os.path.join(self.get_path(), "lessThanThreshold")
+            CategorizeCommand.countDirectory += 1
+            lessPath = os.path.join(self.get_path(), "lessThanThreshold_"+str(CategorizeCommand.countDirectory))
+            # When we rerun the script multiple types, this will handle the duplicate names
+            while os.path.exists(lessPath):
+                CategorizeCommand.countDirectory += 1
+                lessPath = os.path.join(self.get_path(), "lessThanThreshold_" + str(CategorizeCommand.countDirectory))
+            try:
                 os.mkdir(lessPath)
-                morePath = os.path.join(self.get_path(), "GreaterThanThreshold")
+                self._outputReport+="\n %s directory created" %lessPath
+                morePath = os.path.join(self.get_path(), "GreaterThanThreshold_" + str(CategorizeCommand.countDirectory))
                 os.mkdir(morePath)
-                for file in directory_files:
-                    print(os.stat(file).st_size)
-                    if os.stat(file).st_size < 5:
-                        shutil.move(file, lessPath)
+                self._outputReport += "\n %s directory created" % morePath
+                for fname in os.listdir(self.get_path()):
+                    path = os.path.join(self.get_path(), fname)
+                    if os.path.isdir(path):
+                        continue
                     else:
-                        shutil.move(file, morePath)
+                        if os.stat((os.path.join(self.get_path(),fname))).st_size < convert_sizes.convert(main.configurations[" Threshold_size "]):
+                            shutil.move((os.path.join(self.get_path(), fname)), lessPath)
+                            self._outputReport += "\n Moved " + fname + " to " + lessPath
+                        else:
+                            shutil.move((os.path.join(self.get_path(),fname)), morePath)
+                            self._outputReport += "\n Moved " + fname + " to " + morePath
+            except OSError:
+                self._outputReport += "\nCreation of directory failed"
+                self._finishStatus = False
+            else:
+                self._outputReport += "\nCommand failed"
+
 
 
 
