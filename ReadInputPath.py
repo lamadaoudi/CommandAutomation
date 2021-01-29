@@ -11,21 +11,21 @@ def writeOutput(fname, status, passedPath, failedPath):
     option = main.configurations[" output "]
     counter = 0
     if status:
-        checkThreshold(passedPath)
         filename = os.path.join(passedPath, fname) + "_Output_Passed"
     else:
-        checkThreshold(failedPath)
         filename = os.path.join(failedPath, fname) + "_Output_Failed"
     if option.strip() == "log":
+        temp=filename
         filename = filename + "_" + str(counter) + ".log"
         while os.path.exists(filename):
             counter += 1
-            filename = filename + "_" + str(counter) + ".log"
+            filename = temp + "_" + str(counter) + ".log"
     elif option.strip() == "csv":
+        temp=filename
         filename = filename + "_" + str(counter) + ".csv"
         while os.path.exists(filename):
             counter += 1
-            filename = filename + "_" + str(counter) + ".csv"
+            filename = temp + "_" + str(counter) + ".csv"
     return filename
 
 
@@ -33,9 +33,8 @@ def checkThreshold(path):
     logCounter = len(glob.glob1(path, "*.log"))
     csvCounter = len(glob.glob1(path, "*.csv"))
     totalLogFiles = logCounter + csvCounter
-    if totalLogFiles > int(main.configurations[" Max_log_files "]):
+    if totalLogFiles >= int(main.configurations[" Max_log_files "]):
         deleteOldest(path)
-
 
 def deleteOldest(path):
     time_of_files = []
@@ -58,10 +57,9 @@ def deleteOldest(path):
 def readFullPath(input_output_dictionary):
     countDirectories = 0
     inputPath = input_output_dictionary["scripts_path"]
-    print(input_output_dictionary["scripts_path"])
     if main.configurations[" Same_dir "] == "True":
-        passedPath = main.input_output_dictionary["output_path"]
-        failedPath = main.input_output_dictionary["output_path"]
+        passedPath = input_output_dictionary["output_path"]
+        failedPath = input_output_dictionary["output_path"]
     else:
         passedPath = os.path.join(input_output_dictionary["output_path"], "Passed_" + str(countDirectories))
         while os.path.exists(passedPath):
@@ -83,23 +81,20 @@ def readFullPath(input_output_dictionary):
                 reader.readScript()
                 file=writeOutput(fname, reader.scriptStatus, passedPath, failedPath)
                 if (file.endswith("log")):
+                    checkThreshold(passedPath)
+                    checkThreshold(failedPath)
                     print(file)
                     logging.basicConfig(level=logging.DEBUG, filename=file)
                     for item in reader.resultDictionary:
                         string = "Command: " + str(item) + "\n          Output: " + str(reader.resultDictionary[item])
                         logging.info(string)
                 elif (file.endswith("csv")):
+                    checkThreshold(passedPath)
+                    checkThreshold(failedPath)
                     a_file = open(file, "w")
                     writer = csv.writer(a_file)
-                    print(reader.resultDictionary)
-                    print(" ")
                     for key, value in reader.resultDictionary.items():
                         writer.writerow([key, value])
                     a_file.close()
 
 
-
-
-# print(main.configurations)
-# readFullPath("C:\\Users\\Main\\Documents\\BZU_LamaDaoudi\\LinuxLab\\Test\\InputScriptPath")
-#checkThreshold("C:\\Users\\Main\\Documents\\BZU_LamaDaoudi\\LinuxLab\\Test\\Source")

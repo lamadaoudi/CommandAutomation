@@ -7,8 +7,10 @@ from ReadInputPath import *
 
 input_output_dictionary = {}
 configurations = {}
-
-
+# Assumptions:
+# The first option (-s) of the option parser is the path of the directory containing the list of scripts to be read and executed
+# If the csv option was chosen from the json file, a separate csc file is created for each script. However, if it was log
+# one log file is shared among all scripts to show the output
 def intialize_parser():
     parser = optparse.OptionParser()
     parser.add_option('-s', dest='scripts_path', type='string', help='Enter the path of the input scripts')
@@ -55,10 +57,8 @@ if __name__ == '__main__':
         exit(1)
     dictionary = intialize_parser()
     if not dictionary is None and dictionary:
-        # print(input_output_dictionary["scripts_path"])
         readFullPath(dictionary)
 
-# REMOVE THIS, ONLY FOR TESTING BEFORE THE PARSER
 jsonFile = open('configuration.json', )
 configurations = json.load(jsonFile)
 try:

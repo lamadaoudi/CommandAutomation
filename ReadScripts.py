@@ -20,11 +20,11 @@ class Reader:
                         commandObject = CommandFactory.CommandFactory.create_command(line.rstrip())
                         if not commandObject is None:
                             commandObject.execute()
-                            self.resultDictionary[line.rstrip()] = commandObject.get_finishStatus()
+                            self.resultDictionary[line.rstrip()] = commandObject.get_outputReport()
                             if commandObject.get_finishStatus() == False:
                                 self.scriptStatus = False
                         else:
-                            self.resultDictionary[line] = "False because more"
+                            self.resultDictionary[line] = "False because more arguments than should have"
                             self.scriptStatus = False
                     else:
                         self.resultDictionary[line] = "Command not executed. File exceeded maximum commands threshold"

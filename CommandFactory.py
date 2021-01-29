@@ -41,8 +41,3 @@ class CommandFactory:
         else:
             return None
 
-# object = CommandFactory.create_command("Mv_last C:\\Users\\Main\\Documents\\BZU_LamaDaoudi\\LinuxLab\\Resources.txt C:\\Users\\Main\\Documents\\BZU_LamaDaoudi\\LinuxLab\\Test\\Source\\lama.txt")
-# object.execute()
-# print(type(object))
-# print((object.get_finishStatus()))
-# print(object.get_outputReport())
